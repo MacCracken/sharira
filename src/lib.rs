@@ -20,6 +20,7 @@
 
 pub mod biomechanics;
 pub mod body;
+pub mod bridge;
 pub mod error;
 pub mod gait;
 pub mod joint;
