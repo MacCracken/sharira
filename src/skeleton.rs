@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tracing::{instrument, trace};
 
 /// Unique bone identifier within a skeleton.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -10,10 +11,10 @@ pub struct Bone {
     pub id: BoneId,
     pub name: String,
     pub parent: Option<BoneId>,
-    pub length: f32,            // meters
-    pub mass: f32,              // kg
-    pub local_position: [f32; 3],  // offset from parent joint
-    pub local_rotation: [f32; 4],  // quaternion [x,y,z,w]
+    pub length: f32,              // meters
+    pub mass: f32,                // kg
+    pub local_position: [f32; 3], // offset from parent joint
+    pub local_rotation: [f32; 4], // quaternion [x,y,z,w]
 }
 
 /// A complete skeleton (bone hierarchy).
@@ -23,15 +24,75 @@ pub struct Skeleton {
     pub bones: Vec<Bone>,
 }
 
+impl Bone {
+    /// Create a new bone.
+    #[must_use]
+    pub fn new(
+        id: BoneId,
+        name: impl Into<String>,
+        length: f32,
+        mass: f32,
+        parent: Option<BoneId>,
+    ) -> Self {
+        Self {
+            id,
+            name: name.into(),
+            parent,
+            length,
+            mass,
+            local_position: [0.0; 3],
+            local_rotation: [0.0, 0.0, 0.0, 1.0],
+        }
+    }
+
+    /// Create a new bone with position.
+    #[must_use]
+    pub fn with_position(mut self, position: [f32; 3]) -> Self {
+        self.local_position = position;
+        self
+    }
+
+    /// Create a new bone with rotation.
+    #[must_use]
+    pub fn with_rotation(mut self, rotation: [f32; 4]) -> Self {
+        self.local_rotation = rotation;
+        self
+    }
+}
+
 impl Skeleton {
+    /// Create an empty skeleton.
+    #[must_use]
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            bones: Vec::new(),
+        }
+    }
+
+    /// Add a bone to the skeleton.
+    pub fn add_bone(&mut self, bone: Bone) {
+        trace!(bone_id = bone.id.0, name = %bone.name, "adding bone");
+        self.bones.push(bone);
+    }
+
+    /// Immutable access to bones.
+    #[must_use]
+    #[inline]
+    pub fn bones(&self) -> &[Bone] {
+        &self.bones
+    }
+
     /// Find a bone by name.
     #[must_use]
+    #[inline]
     pub fn find_bone(&self, name: &str) -> Option<&Bone> {
         self.bones.iter().find(|b| b.name == name)
     }
 
     /// Find a bone by ID.
     #[must_use]
+    #[inline]
     pub fn get_bone(&self, id: BoneId) -> Option<&Bone> {
         self.bones.iter().find(|b| b.id == id)
     }
@@ -58,11 +119,15 @@ impl Skeleton {
     /// Get children of a bone.
     #[must_use]
     pub fn children(&self, parent_id: BoneId) -> Vec<&Bone> {
-        self.bones.iter().filter(|b| b.parent == Some(parent_id)).collect()
+        self.bones
+            .iter()
+            .filter(|b| b.parent == Some(parent_id))
+            .collect()
     }
 
     /// Chain from bone to root (inclusive).
     #[must_use]
+    #[instrument(skip(self), fields(skeleton = %self.name))]
     pub fn chain_to_root(&self, bone_id: BoneId) -> Vec<BoneId> {
         let mut chain = vec![bone_id];
         let mut current = bone_id;
@@ -86,11 +151,51 @@ mod tests {
         Skeleton {
             name: "test".into(),
             bones: vec![
-                Bone { id: BoneId(0), name: "root".into(), parent: None, length: 0.5, mass: 10.0, local_position: [0.0; 3], local_rotation: [0.0, 0.0, 0.0, 1.0] },
-                Bone { id: BoneId(1), name: "spine".into(), parent: Some(BoneId(0)), length: 0.4, mass: 8.0, local_position: [0.0, 0.5, 0.0], local_rotation: [0.0, 0.0, 0.0, 1.0] },
-                Bone { id: BoneId(2), name: "head".into(), parent: Some(BoneId(1)), length: 0.2, mass: 5.0, local_position: [0.0, 0.4, 0.0], local_rotation: [0.0, 0.0, 0.0, 1.0] },
-                Bone { id: BoneId(3), name: "left_arm".into(), parent: Some(BoneId(1)), length: 0.6, mass: 4.0, local_position: [-0.2, 0.3, 0.0], local_rotation: [0.0, 0.0, 0.0, 1.0] },
-                Bone { id: BoneId(4), name: "right_arm".into(), parent: Some(BoneId(1)), length: 0.6, mass: 4.0, local_position: [0.2, 0.3, 0.0], local_rotation: [0.0, 0.0, 0.0, 1.0] },
+                Bone {
+                    id: BoneId(0),
+                    name: "root".into(),
+                    parent: None,
+                    length: 0.5,
+                    mass: 10.0,
+                    local_position: [0.0; 3],
+                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                },
+                Bone {
+                    id: BoneId(1),
+                    name: "spine".into(),
+                    parent: Some(BoneId(0)),
+                    length: 0.4,
+                    mass: 8.0,
+                    local_position: [0.0, 0.5, 0.0],
+                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                },
+                Bone {
+                    id: BoneId(2),
+                    name: "head".into(),
+                    parent: Some(BoneId(1)),
+                    length: 0.2,
+                    mass: 5.0,
+                    local_position: [0.0, 0.4, 0.0],
+                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                },
+                Bone {
+                    id: BoneId(3),
+                    name: "left_arm".into(),
+                    parent: Some(BoneId(1)),
+                    length: 0.6,
+                    mass: 4.0,
+                    local_position: [-0.2, 0.3, 0.0],
+                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                },
+                Bone {
+                    id: BoneId(4),
+                    name: "right_arm".into(),
+                    parent: Some(BoneId(1)),
+                    length: 0.6,
+                    mass: 4.0,
+                    local_position: [0.2, 0.3, 0.0],
+                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                },
             ],
         }
     }

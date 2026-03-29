@@ -7,7 +7,9 @@ pub fn center_of_mass(masses: &[f32], positions: &[[f32; 3]]) -> [f32; 3] {
         return [0.0; 3];
     }
     let total_mass: f32 = masses.iter().sum();
-    if total_mass <= 0.0 { return [0.0; 3]; }
+    if total_mass <= 0.0 {
+        return [0.0; 3];
+    }
 
     let mut com = [0.0_f32; 3];
     for (m, p) in masses.iter().zip(positions.iter()) {
@@ -28,7 +30,9 @@ pub fn center_of_mass(masses: &[f32], positions: &[[f32; 3]]) -> [f32; 3] {
 #[inline]
 pub fn ground_reaction_force(mass_kg: f32, gravity: f32, duty_factor: f32) -> f32 {
     // Average GRF over cycle: body weight / duty factor
-    if duty_factor <= 0.0 { return 0.0; }
+    if duty_factor <= 0.0 {
+        return 0.0;
+    }
     mass_kg * gravity / duty_factor
 }
 
@@ -39,7 +43,9 @@ pub fn ground_reaction_force(mass_kg: f32, gravity: f32, duty_factor: f32) -> f3
 #[must_use]
 #[inline]
 pub fn cost_of_transport(energy_j: f32, mass_kg: f32, distance_m: f32) -> f32 {
-    if mass_kg <= 0.0 || distance_m <= 0.0 { return 0.0; }
+    if mass_kg <= 0.0 || distance_m <= 0.0 {
+        return 0.0;
+    }
     energy_j / (mass_kg * distance_m)
 }
 
@@ -65,20 +71,30 @@ mod tests {
     #[test]
     fn com_weighted() {
         let com = center_of_mass(&[3.0, 1.0], &[[0.0, 0.0, 0.0], [4.0, 0.0, 0.0]]);
-        assert!((com[0] - 1.0).abs() < 0.01, "CoM should be at 1.0, got {}", com[0]);
+        assert!(
+            (com[0] - 1.0).abs() < 0.01,
+            "CoM should be at 1.0, got {}",
+            com[0]
+        );
     }
 
     #[test]
     fn grf_walking() {
         // 70kg, 9.81, duty 0.6 → GRF ≈ 1144 N (more than body weight due to duty < 1.0)
         let grf = ground_reaction_force(70.0, 9.81, 0.6);
-        assert!(grf > 70.0 * 9.81, "GRF should exceed body weight during walking");
+        assert!(
+            grf > 70.0 * 9.81,
+            "GRF should exceed body weight during walking"
+        );
     }
 
     #[test]
     fn cot_walking() {
         let cot = cost_of_transport(240.0, 70.0, 1.0);
-        assert!((cot - 3.43).abs() < 0.1, "walking CoT should be ~3.4, got {cot}");
+        assert!(
+            (cot - 3.43).abs() < 0.1,
+            "walking CoT should be ~3.4, got {cot}"
+        );
     }
 
     #[test]

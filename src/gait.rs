@@ -3,21 +3,49 @@ use serde::{Deserialize, Serialize};
 /// Gait phase within a cycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
-pub enum GaitPhase { Stance, Swing, DoubleSupport, Flight }
+pub enum GaitPhase {
+    Stance,
+    Swing,
+    DoubleSupport,
+    Flight,
+}
 
 /// Locomotion gait type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
-pub enum GaitType { Walk, Trot, Canter, Gallop, Crawl, Slither, Hop, Fly, Swim }
+pub enum GaitType {
+    Walk,
+    Run,
+    Trot,
+    Canter,
+    Gallop,
+    Crawl,
+    Slither,
+    Hop,
+    Fly,
+    Swim,
+}
 
 /// A gait cycle definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GaitCycle {
     pub gait_type: GaitType,
-    pub cycle_duration_s: f32,       // one full cycle
-    pub duty_factor: f32,            // fraction of cycle foot is on ground (0-1)
+    pub cycle_duration_s: f32, // one full cycle
+    pub duty_factor: f32,      // fraction of cycle foot is on ground (0-1)
     pub stride_length_m: f32,
     pub limb_phase_offsets: Vec<f32>, // phase offset per limb (0.0-1.0)
+}
+
+impl GaitCycle {
+    /// Speed from stride length and cycle time (m/s).
+    #[must_use]
+    #[inline]
+    pub fn speed(&self) -> f32 {
+        if self.cycle_duration_s <= 0.0 {
+            return 0.0;
+        }
+        self.stride_length_m / self.cycle_duration_s
+    }
 }
 
 /// A complete gait definition.
@@ -25,7 +53,7 @@ pub struct GaitCycle {
 pub struct Gait {
     pub name: String,
     pub gait_type: GaitType,
-    pub speed_range: (f32, f32),   // min/max speed in m/s
+    pub speed_range: (f32, f32), // min/max speed in m/s
     pub cycle: GaitCycle,
 }
 
@@ -34,11 +62,15 @@ impl Gait {
     #[must_use]
     pub fn human_walk() -> Self {
         Self {
-            name: "walk".into(), gait_type: GaitType::Walk,
+            name: "walk".into(),
+            gait_type: GaitType::Walk,
             speed_range: (0.5, 2.0),
             cycle: GaitCycle {
-                gait_type: GaitType::Walk, cycle_duration_s: 1.0, duty_factor: 0.6,
-                stride_length_m: 1.4, limb_phase_offsets: vec![0.0, 0.5], // left, right
+                gait_type: GaitType::Walk,
+                cycle_duration_s: 1.0,
+                duty_factor: 0.6,
+                stride_length_m: 1.4,
+                limb_phase_offsets: vec![0.0, 0.5], // left, right
             },
         }
     }
@@ -47,11 +79,15 @@ impl Gait {
     #[must_use]
     pub fn human_run() -> Self {
         Self {
-            name: "run".into(), gait_type: GaitType::Gallop,
+            name: "run".into(),
+            gait_type: GaitType::Run,
             speed_range: (2.0, 10.0),
             cycle: GaitCycle {
-                gait_type: GaitType::Gallop, cycle_duration_s: 0.7, duty_factor: 0.35,
-                stride_length_m: 2.5, limb_phase_offsets: vec![0.0, 0.5],
+                gait_type: GaitType::Run,
+                cycle_duration_s: 0.7,
+                duty_factor: 0.35,
+                stride_length_m: 2.5,
+                limb_phase_offsets: vec![0.0, 0.5],
             },
         }
     }
@@ -60,10 +96,13 @@ impl Gait {
     #[must_use]
     pub fn quadruped_walk() -> Self {
         Self {
-            name: "quadruped_walk".into(), gait_type: GaitType::Walk,
+            name: "quadruped_walk".into(),
+            gait_type: GaitType::Walk,
             speed_range: (0.5, 2.0),
             cycle: GaitCycle {
-                gait_type: GaitType::Walk, cycle_duration_s: 1.2, duty_factor: 0.75,
+                gait_type: GaitType::Walk,
+                cycle_duration_s: 1.2,
+                duty_factor: 0.75,
                 stride_length_m: 1.8,
                 limb_phase_offsets: vec![0.0, 0.5, 0.25, 0.75], // LF, RF, LH, RH
             },
@@ -74,10 +113,13 @@ impl Gait {
     #[must_use]
     pub fn quadruped_trot() -> Self {
         Self {
-            name: "trot".into(), gait_type: GaitType::Trot,
+            name: "trot".into(),
+            gait_type: GaitType::Trot,
             speed_range: (2.0, 5.0),
             cycle: GaitCycle {
-                gait_type: GaitType::Trot, cycle_duration_s: 0.8, duty_factor: 0.5,
+                gait_type: GaitType::Trot,
+                cycle_duration_s: 0.8,
+                duty_factor: 0.5,
                 stride_length_m: 2.5,
                 limb_phase_offsets: vec![0.0, 0.5, 0.5, 0.0], // LF+RH, RF+LH
             },
@@ -103,7 +145,9 @@ impl Gait {
     #[must_use]
     #[inline]
     pub fn speed(&self) -> f32 {
-        if self.cycle.cycle_duration_s <= 0.0 { return 0.0; }
+        if self.cycle.cycle_duration_s <= 0.0 {
+            return 0.0;
+        }
         self.cycle.stride_length_m / self.cycle.cycle_duration_s
     }
 }
@@ -115,7 +159,11 @@ mod tests {
     #[test]
     fn human_walk_speed() {
         let w = Gait::human_walk();
-        assert!((w.speed() - 1.4).abs() < 0.01, "walk speed should be ~1.4 m/s, got {}", w.speed());
+        assert!(
+            (w.speed() - 1.4).abs() < 0.01,
+            "walk speed should be ~1.4 m/s, got {}",
+            w.speed()
+        );
     }
 
     #[test]

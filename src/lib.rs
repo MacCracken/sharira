@@ -18,20 +18,20 @@
 //! raasta  → navigation (where to go)
 //! ```
 
+pub mod biomechanics;
 pub mod error;
-pub mod skeleton;
+pub mod gait;
 pub mod joint;
 pub mod muscle;
-pub mod gait;
-pub mod biomechanics;
 pub mod preset;
+pub mod skeleton;
 
 #[cfg(feature = "logging")]
 pub mod logging;
 
-pub use error::{ShariraError, Result};
-pub use skeleton::{Skeleton, Bone, BoneId};
-pub use joint::{Joint, JointType, JointLimits};
+pub use error::{Result, ShariraError};
+pub use gait::{Gait, GaitCycle, GaitPhase, GaitType};
+pub use joint::{Joint, JointLimits, JointType};
 pub use muscle::{Muscle, MuscleGroup};
-pub use gait::{Gait, GaitPhase, GaitCycle};
 pub use preset::BodyPlan;
+pub use skeleton::{Bone, BoneId, Skeleton};

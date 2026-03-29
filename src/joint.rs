@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum JointType {
-    Ball,       // 3 DOF (shoulder, hip)
-    Hinge,      // 1 DOF (elbow, knee)
-    Pivot,      // 1 DOF rotation (neck atlas)
-    Saddle,     // 2 DOF (thumb)
-    Fixed,      // 0 DOF (skull sutures)
-    Planar,     // 2 DOF sliding (wrist)
+    Ball,   // 3 DOF (shoulder, hip)
+    Hinge,  // 1 DOF (elbow, knee)
+    Pivot,  // 1 DOF rotation (neck atlas)
+    Saddle, // 2 DOF (thumb)
+    Fixed,  // 0 DOF (skull sutures)
+    Planar, // 2 DOF sliding (wrist)
 }
 
 impl JointType {
@@ -17,8 +17,12 @@ impl JointType {
     #[must_use]
     pub fn degrees_of_freedom(&self) -> u8 {
         match self {
-            Self::Ball => 3, Self::Hinge => 1, Self::Pivot => 1,
-            Self::Saddle => 2, Self::Fixed => 0, Self::Planar => 2,
+            Self::Ball => 3,
+            Self::Hinge => 1,
+            Self::Pivot => 1,
+            Self::Saddle => 2,
+            Self::Fixed => 0,
+            Self::Planar => 2,
         }
     }
 }
@@ -33,7 +37,10 @@ pub struct AxisLimit {
 impl AxisLimit {
     #[must_use]
     pub fn new(min_deg: f32, max_deg: f32) -> Self {
-        Self { min_rad: min_deg.to_radians(), max_rad: max_deg.to_radians() }
+        Self {
+            min_rad: min_deg.to_radians(),
+            max_rad: max_deg.to_radians(),
+        }
     }
 
     /// Clamp an angle to this limit.
@@ -54,22 +61,30 @@ impl AxisLimit {
 /// Joint limits for all axes.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct JointLimits {
-    pub x: Option<AxisLimit>,  // pitch / flexion-extension
-    pub y: Option<AxisLimit>,  // yaw / abduction-adduction
-    pub z: Option<AxisLimit>,  // roll / rotation
+    pub x: Option<AxisLimit>, // pitch / flexion-extension
+    pub y: Option<AxisLimit>, // yaw / abduction-adduction
+    pub z: Option<AxisLimit>, // roll / rotation
 }
 
 impl JointLimits {
     /// Fully free (no limits).
     #[must_use]
     pub fn free() -> Self {
-        Self { x: None, y: None, z: None }
+        Self {
+            x: None,
+            y: None,
+            z: None,
+        }
     }
 
     /// Hinge joint (one axis limited).
     #[must_use]
     pub fn hinge(min_deg: f32, max_deg: f32) -> Self {
-        Self { x: Some(AxisLimit::new(min_deg, max_deg)), y: None, z: None }
+        Self {
+            x: Some(AxisLimit::new(min_deg, max_deg)),
+            y: None,
+            z: None,
+        }
     }
 }
 
@@ -81,8 +96,8 @@ pub struct Joint {
     pub parent_bone: super::skeleton::BoneId,
     pub child_bone: super::skeleton::BoneId,
     pub limits: JointLimits,
-    pub stiffness: f32,    // resistance to movement (0=free, 1=rigid)
-    pub damping: f32,      // velocity decay (0=none, 1=full)
+    pub stiffness: f32, // resistance to movement (0=free, 1=rigid)
+    pub damping: f32,   // velocity decay (0=none, 1=full)
 }
 
 impl Joint {
@@ -90,10 +105,13 @@ impl Joint {
     #[must_use]
     pub fn human_knee(parent: super::skeleton::BoneId, child: super::skeleton::BoneId) -> Self {
         Self {
-            name: "knee".into(), joint_type: JointType::Hinge,
-            parent_bone: parent, child_bone: child,
+            name: "knee".into(),
+            joint_type: JointType::Hinge,
+            parent_bone: parent,
+            child_bone: child,
             limits: JointLimits::hinge(0.0, 135.0),
-            stiffness: 0.1, damping: 0.3,
+            stiffness: 0.1,
+            damping: 0.3,
         }
     }
 
@@ -101,14 +119,17 @@ impl Joint {
     #[must_use]
     pub fn human_shoulder(parent: super::skeleton::BoneId, child: super::skeleton::BoneId) -> Self {
         Self {
-            name: "shoulder".into(), joint_type: JointType::Ball,
-            parent_bone: parent, child_bone: child,
+            name: "shoulder".into(),
+            joint_type: JointType::Ball,
+            parent_bone: parent,
+            child_bone: child,
             limits: JointLimits {
                 x: Some(AxisLimit::new(-60.0, 180.0)),
                 y: Some(AxisLimit::new(-45.0, 180.0)),
                 z: Some(AxisLimit::new(-90.0, 90.0)),
             },
-            stiffness: 0.05, damping: 0.2,
+            stiffness: 0.05,
+            damping: 0.2,
         }
     }
 }
@@ -139,7 +160,10 @@ mod tests {
 
     #[test]
     fn knee_is_hinge() {
-        let knee = Joint::human_knee(super::super::skeleton::BoneId(0), super::super::skeleton::BoneId(1));
+        let knee = Joint::human_knee(
+            super::super::skeleton::BoneId(0),
+            super::super::skeleton::BoneId(1),
+        );
         assert_eq!(knee.joint_type, JointType::Hinge);
         assert!(knee.limits.x.is_some());
         assert!(knee.limits.y.is_none());
@@ -147,7 +171,10 @@ mod tests {
 
     #[test]
     fn shoulder_is_ball() {
-        let shoulder = Joint::human_shoulder(super::super::skeleton::BoneId(0), super::super::skeleton::BoneId(1));
+        let shoulder = Joint::human_shoulder(
+            super::super::skeleton::BoneId(0),
+            super::super::skeleton::BoneId(1),
+        );
         assert_eq!(shoulder.joint_type, JointType::Ball);
         assert_eq!(shoulder.joint_type.degrees_of_freedom(), 3);
     }

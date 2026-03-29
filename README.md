@@ -21,7 +21,7 @@ raasta  → navigation (where to go)
 
 - **Skeleton** — bone hierarchies with parent-child navigation, mass computation, chain traversal
 - **Joints** — ball, hinge, pivot, saddle, fixed, planar — with axis limits, stiffness, damping
-- **Muscles** — Hill muscle model with force-length relationships, activation levels, antagonist detection
+- **Muscles** — full Hill muscle model (active force-length, passive tension, force-velocity, pennation angle), activation levels, antagonist detection
 - **Gaits** — walk, trot, canter, gallop, crawl, slither, hop, fly, swim — with duty factor, stride length, limb phasing
 - **Biomechanics** — center of mass, ground reaction force, cost of transport, balance margin
 - **Body Plans** — bipedal, quadruped, hexapod, octopod, serpentine, avian, aquatic, centipede
@@ -36,7 +36,7 @@ sharira = "0.1"
 ```
 
 ```rust
-use sharira::{Skeleton, Bone, BoneId, Joint, JointType, Gait};
+use sharira::{Skeleton, Bone, BoneId, Gait, Muscle, MuscleGroup};
 
 // Build a skeleton
 let mut skeleton = Skeleton::new("biped");
@@ -48,9 +48,15 @@ let mass = skeleton.total_mass();
 let roots = skeleton.roots();
 let chain = skeleton.chain_to_root(BoneId(1));
 
-// Use a gait preset
+// Muscles with full Hill model
+let mut quad = Muscle::new("quad", BoneId(0), BoneId(1), MuscleGroup::Extensor, 5000.0, 0.3);
+quad.set_activation(0.8);
+let force = quad.current_force(0.3);        // isometric force at rest length
+let dynamic = quad.force_at(0.3, -3.0);     // force while shortening
+
+// Gait preset
 let walk = Gait::human_walk();
-let speed = walk.cycle.speed();
+let speed = walk.speed();
 ```
 
 ### Optional Features

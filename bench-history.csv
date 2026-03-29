@@ -1,0 +1,40 @@
+test skeleton_total_mass_100 ... bench:          44 ns/iter (+/- 0)
+
+test skeleton_find_bone_100 ... bench:          27 ns/iter (+/- 0)
+
+test skeleton_chain_to_root_100 ... bench:        2136 ns/iter (+/- 14)
+
+test skeleton_children_100 ... bench:          65 ns/iter (+/- 0)
+
+test muscle_current_force ... bench:           4 ns/iter (+/- 0)
+
+test center_of_mass_100 ... bench:         138 ns/iter (+/- 0)
+
+test ground_reaction_force ... bench:           1 ns/iter (+/- 0)
+
+test gait_limb_phase ... bench:           6 ns/iter (+/- 0)
+
+test gait_speed ... bench:           0 ns/iter (+/- 0)
+
+test balance_margin ... bench:           1 ns/iter (+/- 0)
+
+test skeleton_total_mass_100 ... bench:          45 ns/iter (+/- 2)
+
+test skeleton_find_bone_100 ... bench:          28 ns/iter (+/- 7)
+
+test skeleton_chain_to_root_100 ... bench:        2244 ns/iter (+/- 505)
+
+test skeleton_children_100 ... bench:          66 ns/iter (+/- 17)
+
+test muscle_current_force ... bench:          12 ns/iter (+/- 0)
+
+test center_of_mass_100 ... bench:         143 ns/iter (+/- 2)
+
+test ground_reaction_force ... bench:           1 ns/iter (+/- 0)
+
+test gait_limb_phase ... bench:           6 ns/iter (+/- 1)
+
+test gait_speed ... bench:           0 ns/iter (+/- 0)
+
+test balance_margin ... bench:           1 ns/iter (+/- 0)
+

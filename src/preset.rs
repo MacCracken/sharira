@@ -4,14 +4,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum BodyPlan {
-    Bipedal,      // human, bird
-    Quadruped,    // wolf, horse, cat
-    Hexapod,      // insect (6 legs)
-    Octopod,      // spider (8 legs)
-    Serpentine,   // snake (no limbs)
-    Avian,        // bird (wings + legs)
-    Aquatic,      // fish (fins)
-    Centipede,    // many legs
+    Bipedal,    // human, bird
+    Quadruped,  // wolf, horse, cat
+    Hexapod,    // insect (6 legs)
+    Octopod,    // spider (8 legs)
+    Serpentine, // snake (no limbs)
+    Avian,      // bird (wings + legs)
+    Aquatic,    // fish (fins)
+    Centipede,  // many legs
 }
 
 impl BodyPlan {
@@ -19,9 +19,14 @@ impl BodyPlan {
     #[must_use]
     pub fn limb_count(&self) -> u8 {
         match self {
-            Self::Bipedal => 2, Self::Quadruped => 4, Self::Hexapod => 6,
-            Self::Octopod => 8, Self::Serpentine => 0, Self::Avian => 4,
-            Self::Aquatic => 0, Self::Centipede => 30,
+            Self::Bipedal => 2,
+            Self::Quadruped => 4,
+            Self::Hexapod => 6,
+            Self::Octopod => 8,
+            Self::Serpentine => 0,
+            Self::Avian => 4,
+            Self::Aquatic => 0,
+            Self::Centipede => 30,
         }
     }
 
@@ -41,9 +46,14 @@ impl BodyPlan {
     #[must_use]
     pub fn typical_joint_count(&self) -> u16 {
         match self {
-            Self::Bipedal => 20, Self::Quadruped => 30, Self::Hexapod => 18,
-            Self::Octopod => 24, Self::Serpentine => 200, Self::Avian => 25,
-            Self::Aquatic => 50, Self::Centipede => 90,
+            Self::Bipedal => 20,
+            Self::Quadruped => 30,
+            Self::Hexapod => 18,
+            Self::Octopod => 24,
+            Self::Serpentine => 200,
+            Self::Avian => 25,
+            Self::Aquatic => 50,
+            Self::Centipede => 90,
         }
     }
 }
@@ -76,7 +86,9 @@ mod tests {
 
     #[test]
     fn snake_many_joints() {
-        assert!(BodyPlan::Serpentine.typical_joint_count() > BodyPlan::Bipedal.typical_joint_count());
+        assert!(
+            BodyPlan::Serpentine.typical_joint_count() > BodyPlan::Bipedal.typical_joint_count()
+        );
     }
 
     #[test]
