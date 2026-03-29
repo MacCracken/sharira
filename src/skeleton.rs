@@ -1,3 +1,4 @@
+use hisab::{Quat, Vec3};
 use serde::{Deserialize, Serialize};
 use tracing::{instrument, trace};
 
@@ -11,10 +12,10 @@ pub struct Bone {
     pub id: BoneId,
     pub name: String,
     pub parent: Option<BoneId>,
-    pub length: f32,              // meters
-    pub mass: f32,                // kg
-    pub local_position: [f32; 3], // offset from parent joint
-    pub local_rotation: [f32; 4], // quaternion [x,y,z,w]
+    pub length: f32,          // meters
+    pub mass: f32,            // kg
+    pub local_position: Vec3, // offset from parent joint (meters)
+    pub local_rotation: Quat, // local orientation relative to parent
 }
 
 /// A complete skeleton (bone hierarchy).
@@ -40,21 +41,21 @@ impl Bone {
             parent,
             length,
             mass,
-            local_position: [0.0; 3],
-            local_rotation: [0.0, 0.0, 0.0, 1.0],
+            local_position: Vec3::ZERO,
+            local_rotation: Quat::IDENTITY,
         }
     }
 
     /// Create a new bone with position.
     #[must_use]
-    pub fn with_position(mut self, position: [f32; 3]) -> Self {
+    pub fn with_position(mut self, position: Vec3) -> Self {
         self.local_position = position;
         self
     }
 
     /// Create a new bone with rotation.
     #[must_use]
-    pub fn with_rotation(mut self, rotation: [f32; 4]) -> Self {
+    pub fn with_rotation(mut self, rotation: Quat) -> Self {
         self.local_rotation = rotation;
         self
     }
@@ -157,8 +158,8 @@ mod tests {
                     parent: None,
                     length: 0.5,
                     mass: 10.0,
-                    local_position: [0.0; 3],
-                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                    local_position: Vec3::ZERO,
+                    local_rotation: Quat::IDENTITY,
                 },
                 Bone {
                     id: BoneId(1),
@@ -166,8 +167,8 @@ mod tests {
                     parent: Some(BoneId(0)),
                     length: 0.4,
                     mass: 8.0,
-                    local_position: [0.0, 0.5, 0.0],
-                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                    local_position: Vec3::new(0.0, 0.5, 0.0),
+                    local_rotation: Quat::IDENTITY,
                 },
                 Bone {
                     id: BoneId(2),
@@ -175,8 +176,8 @@ mod tests {
                     parent: Some(BoneId(1)),
                     length: 0.2,
                     mass: 5.0,
-                    local_position: [0.0, 0.4, 0.0],
-                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                    local_position: Vec3::new(0.0, 0.4, 0.0),
+                    local_rotation: Quat::IDENTITY,
                 },
                 Bone {
                     id: BoneId(3),
@@ -184,8 +185,8 @@ mod tests {
                     parent: Some(BoneId(1)),
                     length: 0.6,
                     mass: 4.0,
-                    local_position: [-0.2, 0.3, 0.0],
-                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                    local_position: Vec3::new(-0.2, 0.3, 0.0),
+                    local_rotation: Quat::IDENTITY,
                 },
                 Bone {
                     id: BoneId(4),
@@ -193,8 +194,8 @@ mod tests {
                     parent: Some(BoneId(1)),
                     length: 0.6,
                     mass: 4.0,
-                    local_position: [0.2, 0.3, 0.0],
-                    local_rotation: [0.0, 0.0, 0.0, 1.0],
+                    local_position: Vec3::new(0.2, 0.3, 0.0),
+                    local_rotation: Quat::IDENTITY,
                 },
             ],
         }

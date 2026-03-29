@@ -19,19 +19,25 @@
 //! ```
 
 pub mod biomechanics;
+pub mod body;
 pub mod error;
 pub mod gait;
 pub mod joint;
+pub mod kinematics;
 pub mod muscle;
+pub mod pose;
 pub mod preset;
 pub mod skeleton;
 
 #[cfg(feature = "logging")]
 pub mod logging;
 
+pub use body::Body;
 pub use error::{Result, ShariraError};
-pub use gait::{Gait, GaitCycle, GaitPhase, GaitType};
+pub use gait::{FootPlacement, Gait, GaitCycle, GaitPhase, GaitType};
 pub use joint::{Joint, JointLimits, JointType};
+pub use kinematics::{WorldTransforms, forward_kinematics};
 pub use muscle::{Muscle, MuscleGroup};
+pub use pose::Pose;
 pub use preset::BodyPlan;
 pub use skeleton::{Bone, BoneId, Skeleton};

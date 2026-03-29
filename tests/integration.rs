@@ -1,9 +1,9 @@
+use hisab::{Quat, Vec3};
 use sharira::biomechanics;
 use sharira::{BodyPlan, Bone, BoneId, Gait, Joint, JointType, Muscle, MuscleGroup, Skeleton};
 
 #[test]
 fn full_body_assembly() {
-    // Build a minimal biped skeleton
     let skeleton = Skeleton {
         name: "biped".into(),
         bones: vec![
@@ -13,8 +13,8 @@ fn full_body_assembly() {
                 parent: None,
                 length: 0.2,
                 mass: 5.0,
-                local_position: [0.0; 3],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::ZERO,
+                local_rotation: Quat::IDENTITY,
             },
             Bone {
                 id: BoneId(1),
@@ -22,8 +22,8 @@ fn full_body_assembly() {
                 parent: Some(BoneId(0)),
                 length: 0.45,
                 mass: 4.0,
-                local_position: [-0.1, -0.1, 0.0],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::new(-0.1, -0.1, 0.0),
+                local_rotation: Quat::IDENTITY,
             },
             Bone {
                 id: BoneId(2),
@@ -31,8 +31,8 @@ fn full_body_assembly() {
                 parent: Some(BoneId(1)),
                 length: 0.4,
                 mass: 3.0,
-                local_position: [0.0, -0.45, 0.0],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::new(0.0, -0.45, 0.0),
+                local_rotation: Quat::IDENTITY,
             },
             Bone {
                 id: BoneId(3),
@@ -40,8 +40,8 @@ fn full_body_assembly() {
                 parent: Some(BoneId(0)),
                 length: 0.45,
                 mass: 4.0,
-                local_position: [0.1, -0.1, 0.0],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::new(0.1, -0.1, 0.0),
+                local_rotation: Quat::IDENTITY,
             },
             Bone {
                 id: BoneId(4),
@@ -49,8 +49,8 @@ fn full_body_assembly() {
                 parent: Some(BoneId(3)),
                 length: 0.4,
                 mass: 3.0,
-                local_position: [0.0, -0.45, 0.0],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::new(0.0, -0.45, 0.0),
+                local_rotation: Quat::IDENTITY,
             },
         ],
     };
@@ -91,10 +91,10 @@ fn full_body_assembly() {
     assert!(walk.speed() > 0.0);
 
     // Biomechanics
-    let masses: Vec<f32> = skeleton.bones.iter().map(|b| b.mass).collect();
-    let positions: Vec<[f32; 3]> = skeleton.bones.iter().map(|b| b.local_position).collect();
+    let masses: Vec<f32> = skeleton.bones().iter().map(|b| b.mass).collect();
+    let positions: Vec<Vec3> = skeleton.bones().iter().map(|b| b.local_position).collect();
     let com = biomechanics::center_of_mass(&masses, &positions);
-    assert!(com[0].is_finite() && com[1].is_finite() && com[2].is_finite());
+    assert!(com.x.is_finite() && com.y.is_finite() && com.z.is_finite());
 
     // Body plan
     assert_eq!(BodyPlan::Bipedal.limb_count(), 2);
@@ -111,8 +111,8 @@ fn chain_to_root_traversal() {
                 parent: None,
                 length: 0.1,
                 mass: 1.0,
-                local_position: [0.0; 3],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::ZERO,
+                local_rotation: Quat::IDENTITY,
             },
             Bone {
                 id: BoneId(1),
@@ -120,8 +120,8 @@ fn chain_to_root_traversal() {
                 parent: Some(BoneId(0)),
                 length: 0.1,
                 mass: 1.0,
-                local_position: [0.0, 0.1, 0.0],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::new(0.0, 0.1, 0.0),
+                local_rotation: Quat::IDENTITY,
             },
             Bone {
                 id: BoneId(2),
@@ -129,8 +129,8 @@ fn chain_to_root_traversal() {
                 parent: Some(BoneId(1)),
                 length: 0.1,
                 mass: 1.0,
-                local_position: [0.0, 0.2, 0.0],
-                local_rotation: [0.0, 0.0, 0.0, 1.0],
+                local_position: Vec3::new(0.0, 0.2, 0.0),
+                local_rotation: Quat::IDENTITY,
             },
         ],
     };
@@ -193,7 +193,7 @@ fn muscle_force_curve() {
 fn biomechanics_edge_cases() {
     // Empty inputs
     let com = biomechanics::center_of_mass(&[], &[]);
-    assert_eq!(com, [0.0; 3]);
+    assert_eq!(com, Vec3::ZERO);
 
     // Zero mass
     let grf = biomechanics::ground_reaction_force(0.0, 9.81, 0.6);

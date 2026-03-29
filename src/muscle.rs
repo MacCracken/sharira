@@ -1,3 +1,4 @@
+use hisab::Vec3;
 use serde::{Deserialize, Serialize};
 use tracing::trace;
 
@@ -26,6 +27,16 @@ pub struct Muscle {
     pub max_velocity: f32,    // maximum shortening velocity (lengths/s, typ. 10.0)
     pub passive_strain: f32,  // strain at which passive force equals max_force (typ. 0.6)
     pub pennation_angle: f32, // fiber pennation angle at rest (radians, typ. 0.0)
+    // Attachment geometry
+    pub origin_offset: Vec3, // attachment point relative to origin bone (meters)
+    pub insertion_offset: Vec3, // attachment point relative to insertion bone (meters)
+    // Activation dynamics
+    pub excitation: f32,       // neural drive signal (0-1)
+    pub tau_activation: f32,   // activation time constant (s, typ. 0.015)
+    pub tau_deactivation: f32, // deactivation time constant (s, typ. 0.050)
+    // Tendon
+    pub tendon_slack_length: f32, // length at which tendon begins to bear load (meters)
+    pub tendon_stiffness: f32,    // normalized stiffness (typ. 35.0)
 }
 
 impl Muscle {
@@ -50,6 +61,13 @@ impl Muscle {
             max_velocity: 10.0,
             passive_strain: 0.6,
             pennation_angle: 0.0,
+            origin_offset: Vec3::ZERO,
+            insertion_offset: Vec3::ZERO,
+            excitation: 0.0,
+            tau_activation: 0.015,
+            tau_deactivation: 0.050,
+            tendon_slack_length: rest_length * 0.5,
+            tendon_stiffness: 35.0,
         }
     }
 
@@ -141,6 +159,85 @@ impl Muscle {
                 | (MuscleGroup::Abductor, MuscleGroup::Adductor)
                 | (MuscleGroup::Adductor, MuscleGroup::Abductor)
         )
+    }
+
+    /// Set attachment offsets (origin and insertion points relative to their bones).
+    pub fn with_attachments(mut self, origin_offset: Vec3, insertion_offset: Vec3) -> Self {
+        self.origin_offset = origin_offset;
+        self.insertion_offset = insertion_offset;
+        self
+    }
+
+    /// Update activation from excitation using first-order dynamics.
+    ///
+    /// Uses implicit Euler integration: unconditionally stable at any timestep.
+    /// `a_new = (a + dt/tau * u) / (1 + dt/tau)`
+    /// where tau = tau_activation if excitation > activation, else tau_deactivation.
+    pub fn update_activation(&mut self, dt: f32) {
+        if dt <= 0.0 {
+            return;
+        }
+        let tau = if self.excitation > self.activation {
+            self.tau_activation
+        } else {
+            self.tau_deactivation
+        };
+        if tau <= 0.0 {
+            self.activation = self.excitation.clamp(0.0, 1.0);
+            return;
+        }
+        let ratio = dt / tau;
+        self.activation =
+            ((self.activation + ratio * self.excitation) / (1.0 + ratio)).clamp(0.0, 1.0);
+    }
+
+    /// Set excitation level (neural drive, clamped 0-1).
+    pub fn set_excitation(&mut self, level: f32) {
+        self.excitation = level.clamp(0.0, 1.0);
+    }
+
+    /// Tendon force from current tendon length (series elastic element).
+    ///
+    /// Returns force in Newtons. Zero if tendon is slack (below slack length).
+    #[must_use]
+    #[inline]
+    pub fn tendon_force(&self, tendon_length: f32) -> f32 {
+        if tendon_length <= self.tendon_slack_length || self.tendon_slack_length <= 0.0 {
+            return 0.0;
+        }
+        let strain = (tendon_length - self.tendon_slack_length) / self.tendon_slack_length;
+        // Exponential tendon model: F_tendon = F_max * (exp(k * strain) - 1) / (exp(k * 0.033) - 1)
+        // Normalized so that at 3.3% strain, force = F_max
+        let k = self.tendon_stiffness;
+        let norm = (k * 0.033).exp() - 1.0;
+        if norm <= 0.0 {
+            return 0.0;
+        }
+        self.max_force_n * ((k * strain).exp() - 1.0) / norm
+    }
+
+    /// Compute moment arm about a joint axis.
+    ///
+    /// Given world-space origin/insertion positions and a joint axis,
+    /// returns the perpendicular distance (meters) from the muscle line
+    /// of action to the joint center.
+    ///
+    /// `joint_pos`: world-space joint center
+    /// `joint_axis`: world-space rotation axis (must be normalized)
+    /// `origin_world`: world-space muscle origin point
+    /// `insertion_world`: world-space muscle insertion point
+    #[must_use]
+    pub fn moment_arm(
+        joint_pos: Vec3,
+        joint_axis: Vec3,
+        origin_world: Vec3,
+        insertion_world: Vec3,
+    ) -> f32 {
+        let muscle_dir = (insertion_world - origin_world).normalize_or_zero();
+        let joint_to_origin = origin_world - joint_pos;
+        // Moment arm = |(r × F_dir) · axis| where r is joint-to-attachment
+        let cross = joint_to_origin.cross(muscle_dir);
+        cross.dot(joint_axis).abs()
     }
 }
 
@@ -259,5 +356,109 @@ mod tests {
         assert_eq!(m.activation, 1.0);
         m.set_activation(-0.5);
         assert_eq!(m.activation, 0.0);
+    }
+
+    #[test]
+    fn activation_dynamics_reaches_excitation() {
+        let mut m = test_muscle();
+        m.set_excitation(1.0);
+        // Simulate for 200ms at 1ms steps (>> 3*tau_activation)
+        for _ in 0..200 {
+            m.update_activation(0.001);
+        }
+        assert!(
+            (m.activation - 1.0).abs() < 0.01,
+            "activation should reach excitation, got {}",
+            m.activation
+        );
+    }
+
+    #[test]
+    fn activation_dynamics_deactivation_slower() {
+        let mut m = test_muscle();
+        m.activation = 1.0;
+        m.set_excitation(0.0);
+        // One step at 15ms
+        m.update_activation(0.015);
+        let after_one = m.activation;
+        assert!(
+            after_one > 0.5,
+            "deactivation should be slow (tau=50ms), got {after_one}"
+        );
+    }
+
+    #[test]
+    fn activation_dynamics_stable_large_dt() {
+        let mut m = test_muscle();
+        m.set_excitation(1.0);
+        // Huge timestep — should not explode
+        m.update_activation(100.0);
+        assert!(
+            m.activation >= 0.0 && m.activation <= 1.0,
+            "implicit Euler should be stable at any dt"
+        );
+    }
+
+    #[test]
+    fn tendon_force_slack() {
+        let m = test_muscle();
+        // Below slack length → zero force
+        assert_eq!(m.tendon_force(0.0), 0.0);
+        assert_eq!(m.tendon_force(m.tendon_slack_length * 0.5), 0.0);
+    }
+
+    #[test]
+    fn tendon_force_increases_with_stretch() {
+        let m = test_muscle();
+        let slack = m.tendon_slack_length;
+        let f1 = m.tendon_force(slack * 1.01);
+        let f2 = m.tendon_force(slack * 1.03);
+        assert!(f1 > 0.0, "tendon should produce force above slack");
+        assert!(
+            f2 > f1,
+            "tendon force should increase with stretch: {f1} vs {f2}"
+        );
+    }
+
+    #[test]
+    fn moment_arm_perpendicular() {
+        // Muscle running parallel to Y-axis, joint on Z-axis at origin
+        let origin = Vec3::new(0.05, 0.0, 0.0); // 5cm from joint axis
+        let insertion = Vec3::new(0.05, -0.3, 0.0);
+        let joint_pos = Vec3::ZERO;
+        let joint_axis = Vec3::Z; // rotation around Z
+
+        let ma = Muscle::moment_arm(joint_pos, joint_axis, origin, insertion);
+        assert!(
+            (ma - 0.05).abs() < 0.001,
+            "moment arm should be ~0.05m, got {ma}"
+        );
+    }
+
+    #[test]
+    fn moment_arm_zero_when_aligned() {
+        // Muscle line passes through joint axis
+        let origin = Vec3::new(0.0, 0.1, 0.0);
+        let insertion = Vec3::new(0.0, -0.1, 0.0);
+        let joint_pos = Vec3::ZERO;
+        let joint_axis = Vec3::Y; // muscle is along the axis
+
+        let ma = Muscle::moment_arm(joint_pos, joint_axis, origin, insertion);
+        assert!(ma < 0.001, "moment arm should be ~0 when aligned, got {ma}");
+    }
+
+    #[test]
+    fn with_attachments_builder() {
+        let m = Muscle::new(
+            "test",
+            BoneId(0),
+            BoneId(1),
+            MuscleGroup::Flexor,
+            100.0,
+            0.2,
+        )
+        .with_attachments(Vec3::new(0.01, 0.0, 0.0), Vec3::new(-0.01, -0.2, 0.0));
+        assert!((m.origin_offset.x - 0.01).abs() < 1e-6);
+        assert!((m.insertion_offset.y - -0.2).abs() < 1e-6);
     }
 }

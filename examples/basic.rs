@@ -1,3 +1,4 @@
+use hisab::Vec3;
 use sharira::biomechanics;
 use sharira::{Bone, BoneId, Gait, Joint, Muscle, MuscleGroup, Skeleton};
 
@@ -7,10 +8,11 @@ fn main() {
     skeleton.add_bone(Bone::new(BoneId(0), "pelvis", 0.2, 10.0, None));
     skeleton.add_bone(
         Bone::new(BoneId(1), "femur_l", 0.45, 8.0, Some(BoneId(0)))
-            .with_position([-0.1, -0.1, 0.0]),
+            .with_position(Vec3::new(-0.1, -0.1, 0.0)),
     );
     skeleton.add_bone(
-        Bone::new(BoneId(2), "tibia_l", 0.4, 5.0, Some(BoneId(1))).with_position([0.0, -0.45, 0.0]),
+        Bone::new(BoneId(2), "tibia_l", 0.4, 5.0, Some(BoneId(1)))
+            .with_position(Vec3::new(0.0, -0.45, 0.0)),
     );
 
     println!(
@@ -56,10 +58,7 @@ fn main() {
 
     // Center of mass
     let masses: Vec<f32> = skeleton.bones().iter().map(|b| b.mass).collect();
-    let positions: Vec<[f32; 3]> = skeleton.bones().iter().map(|b| b.local_position).collect();
+    let positions: Vec<Vec3> = skeleton.bones().iter().map(|b| b.local_position).collect();
     let com = biomechanics::center_of_mass(&masses, &positions);
-    println!(
-        "Center of mass: [{:.3}, {:.3}, {:.3}]",
-        com[0], com[1], com[2]
-    );
+    println!("Center of mass: [{:.3}, {:.3}, {:.3}]", com.x, com.y, com.z);
 }

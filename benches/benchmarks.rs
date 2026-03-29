@@ -1,4 +1,5 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use hisab::Vec3;
 use sharira::biomechanics;
 use sharira::{Bone, BoneId, Gait, Muscle, MuscleGroup, Skeleton};
 
@@ -62,8 +63,8 @@ fn bench_muscle_force(c: &mut Criterion) {
 
 fn bench_center_of_mass(c: &mut Criterion) {
     let masses: Vec<f32> = (0..100).map(|i| 1.0 + i as f32 * 0.1).collect();
-    let positions: Vec<[f32; 3]> = (0..100)
-        .map(|i| [i as f32 * 0.1, i as f32 * 0.05, 0.0])
+    let positions: Vec<Vec3> = (0..100)
+        .map(|i| Vec3::new(i as f32 * 0.1, i as f32 * 0.05, 0.0))
         .collect();
     c.bench_function("center_of_mass_100", |b| {
         b.iter(|| black_box(biomechanics::center_of_mass(&masses, &positions)))
