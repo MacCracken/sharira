@@ -38,3 +38,40 @@ test gait_speed ... bench:           0 ns/iter (+/- 0)
 
 test balance_margin ... bench:           1 ns/iter (+/- 0)
 
+2026-03-30T02:44:45Z,11e690e,main,skeleton_total_mass_100,44
+2026-03-30T02:44:45Z,11e690e,main,skeleton_find_bone_100,25
+2026-03-30T02:44:45Z,11e690e,main,skeleton_chain_to_root_100,2322
+2026-03-30T02:44:45Z,11e690e,main,skeleton_children_100,70
+2026-03-30T02:44:45Z,11e690e,main,muscle_current_force,12
+2026-03-30T02:44:45Z,11e690e,main,center_of_mass_100,142
+2026-03-30T02:44:45Z,11e690e,main,ground_reaction_force,1
+2026-03-30T02:44:45Z,11e690e,main,gait_limb_phase,6
+2026-03-30T02:44:45Z,11e690e,main,gait_speed,0
+2026-03-30T02:44:45Z,11e690e,main,balance_margin,1
+2026-03-30T02:48:09Z,11e690e,main,skeleton_total_mass_100,45
+2026-03-30T02:48:09Z,11e690e,main,skeleton_find_bone_100,25
+2026-03-30T02:48:09Z,11e690e,main,skeleton_chain_to_root_100,3358
+2026-03-30T02:48:09Z,11e690e,main,skeleton_children_100,67
+2026-03-30T02:48:09Z,11e690e,main,muscle_current_force,12
+2026-03-30T02:48:09Z,11e690e,main,muscle_force_at_with_velocity,7
+2026-03-30T02:48:09Z,11e690e,main,muscle_activation_update,10
+2026-03-30T02:48:09Z,11e690e,main,center_of_mass_100,139
+2026-03-30T02:48:09Z,11e690e,main,ground_reaction_force,1
+2026-03-30T02:48:09Z,11e690e,main,support_polygon_4,49
+2026-03-30T02:48:09Z,11e690e,main,zero_moment_point,3
+2026-03-30T02:48:09Z,11e690e,main,stability_margin,14
+2026-03-30T02:48:09Z,11e690e,main,balance_margin_1d,1
+2026-03-30T02:48:09Z,11e690e,main,gait_limb_phase,6
+2026-03-30T02:48:09Z,11e690e,main,gait_speed,0
+2026-03-30T02:48:09Z,11e690e,main,gait_blend,62
+2026-03-30T02:48:09Z,11e690e,main,gait_controller_update,0
+2026-03-30T02:48:09Z,11e690e,main,foot_placements_4_limbs,70
+2026-03-30T02:48:09Z,11e690e,main,fk_biped_20,603
+2026-03-30T02:48:09Z,11e690e,main,fk_chain_100,2932
+2026-03-30T02:48:09Z,11e690e,main,pose_blend_20,418
+2026-03-30T02:48:09Z,11e690e,main,body_update_20,800
+2026-03-30T02:48:09Z,11e690e,main,ik_two_bone,6
+2026-03-30T02:48:09Z,11e690e,main,ik_fabrik_5_bone,1334
+2026-03-30T02:48:09Z,11e690e,main,fatigue_update,24
+2026-03-30T02:48:09Z,11e690e,main,allometric_skeleton_biped_70kg,911
+2026-03-30T02:48:09Z,11e690e,main,apply_morphology_20,718
