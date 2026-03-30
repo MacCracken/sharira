@@ -13,6 +13,8 @@ pub enum ShariraError {
     BoneNotFound(String),
     #[error("computation error: {0}")]
     ComputationError(String),
+    #[error("IK error: {0}")]
+    IKError(String),
 }
 
 pub type Result<T> = std::result::Result<T, ShariraError>;

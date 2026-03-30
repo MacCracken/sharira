@@ -101,6 +101,39 @@ impl Body {
         self.transforms.as_ref()
     }
 
+    /// Enforce all joint limits on the current pose.
+    ///
+    /// For each joint, clamps the child bone's pose rotation to the joint's axis limits.
+    /// Returns the number of joints that were clamped (i.e., had violations).
+    /// Invalidates cached transforms if any clamping occurred.
+    pub fn constrain_pose(&mut self) -> usize {
+        let mut clamped_count = 0;
+        for joint in &self.joints {
+            let bone_id = joint.child_bone;
+            let current = self.pose.get_joint(bone_id);
+            let violation = joint.violation(current);
+            if violation > 1e-6 {
+                let constrained = joint.clamp_rotation(current);
+                self.pose.set_joint(bone_id, constrained);
+                clamped_count += 1;
+            }
+        }
+        if clamped_count > 0 {
+            self.invalidate();
+        }
+        clamped_count
+    }
+
+    /// Check total joint violation across all joints (radians).
+    /// Returns 0.0 if all joints are within limits.
+    #[must_use]
+    pub fn total_violation(&self) -> f32 {
+        self.joints
+            .iter()
+            .map(|j| j.violation(self.pose.get_joint(j.child_bone)))
+            .sum()
+    }
+
     /// Whether FK has been computed and transforms are available.
     #[must_use]
     #[inline]
@@ -211,6 +244,44 @@ mod tests {
             (tibia_rest - tibia_posed).length() > 0.01,
             "tibia should move when femur is rotated"
         );
+    }
+
+    #[test]
+    fn constrain_pose_clamps_violations() {
+        let mut body = Body::new(biped_skeleton());
+        body.add_joint(Joint::human_knee(BoneId(1), BoneId(2)));
+
+        // Set tibia (child of knee) to an invalid angle (-45°, knee min is 0°)
+        let mut pose = Pose::rest(3);
+        pose.set_joint(BoneId(2), Quat::from_rotation_x(-0.8));
+        body.set_pose(pose);
+
+        assert!(
+            body.total_violation() > 0.1,
+            "should have violation before constrain"
+        );
+        let clamped = body.constrain_pose();
+        assert_eq!(clamped, 1, "one joint should be clamped");
+        assert!(
+            body.total_violation() < 0.01,
+            "violation should be ~0 after constrain"
+        );
+    }
+
+    #[test]
+    fn constrain_pose_no_op_when_valid() {
+        let mut body = Body::new(biped_skeleton());
+        body.add_joint(Joint::human_knee(BoneId(1), BoneId(2)));
+
+        // Set tibia to a valid angle (45°, within 0-135°)
+        let mut pose = Pose::rest(3);
+        pose.set_joint(BoneId(2), Quat::from_rotation_x(0.5));
+        body.set_pose(pose);
+        body.update(Vec3::ZERO, Quat::IDENTITY);
+
+        let clamped = body.constrain_pose();
+        assert_eq!(clamped, 0, "no joints should be clamped");
+        assert!(body.is_updated(), "transforms should not be invalidated");
     }
 
     #[test]

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0]
+
+### Added
+- **ik** — inverse kinematics: `IKChain` for bone chain definition, `IKTarget` with position + optional orientation + pole vector; analytic 2-bone solver (closed-form via law of cosines); FABRIK n-bone solver (iterative forward/backward reaching); both respect joint limits during solve
+- **fatigue** — three-compartment motor unit fatigue model (Xia & Frey-Law 2008): `FatigueState` with resting/active/fatigued motor unit pools; `update()` with implicit Euler integration; `capacity()` multiplier for muscle force; `time_to_exhaustion()` estimate; recovery dynamics (faster at rest, slower under load)
+- **gait** — `Gait::blend()` for interpolating all cycle parameters between gaits; `GaitController` state machine with speed-dependent gait selection, smooth transitions, and configurable duration; `GaitController::bipedal_default()` (idle→walk→run) and `quadrupedal_default()` (walk→trot→canter→gallop) presets
+- **allometry** — `AllometricParams` for power-law body scaling (McMahon 1975, Alexander 2003): bone length/diameter/mass, muscle force, stride length/frequency, heart rate, metabolic rate; `mammalian()` and `avian()` parameter presets; `scale_skeleton()` for geometric scaling; `allometric_skeleton()` to generate plausible skeleton from mass + body plan
+- **morphology** — `Morphology` for parametric within-species variation: per-bone `BoneScale` overrides (length, mass, width); `MorphologyProfile` presets (average, heavy, lean, tall, compact); `Morphology::random()` for population diversity; `apply_morphology()` to generate variant skeletons
+- **joint** — `JointLimits::clamp_rotation()` (Euler decomposition + per-axis clamping); `JointLimits::violation()` (angular violation in radians); `Joint::clamp_rotation()` and `Joint::violation()` convenience methods
+- **body** — `Body::constrain_pose()` (enforce all joint limits, returns clamped count); `Body::total_violation()` (sum of angular violations across joints)
+
 ## [0.3.0]
 
 ### Added

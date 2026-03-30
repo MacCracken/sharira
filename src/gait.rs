@@ -260,6 +260,170 @@ impl Gait {
     }
 }
 
+impl Gait {
+    /// Blend two gaits by interpolating all cycle parameters.
+    /// `t=0.0` returns `a`, `t=1.0` returns `b`.
+    #[must_use]
+    pub fn blend(a: &Gait, b: &Gait, t: f32) -> Gait {
+        let t = t.clamp(0.0, 1.0);
+        let inv = 1.0 - t;
+
+        let max_limbs = a
+            .cycle
+            .limb_phase_offsets
+            .len()
+            .max(b.cycle.limb_phase_offsets.len());
+        let limb_phase_offsets: Vec<f32> = (0..max_limbs)
+            .map(|i| {
+                let a_val = a.cycle.limb_phase_offsets.get(i).copied().unwrap_or(0.0);
+                let b_val = b.cycle.limb_phase_offsets.get(i).copied().unwrap_or(0.0);
+                inv * a_val + t * b_val
+            })
+            .collect();
+
+        let gait_type = if t < 0.5 { a.gait_type } else { b.gait_type };
+
+        Gait {
+            name: format!("blend({},{})", a.name, b.name),
+            gait_type,
+            speed_range: (
+                inv * a.speed_range.0 + t * b.speed_range.0,
+                inv * a.speed_range.1 + t * b.speed_range.1,
+            ),
+            cycle: GaitCycle {
+                gait_type,
+                cycle_duration_s: inv * a.cycle.cycle_duration_s + t * b.cycle.cycle_duration_s,
+                duty_factor: inv * a.cycle.duty_factor + t * b.cycle.duty_factor,
+                stride_length_m: inv * a.cycle.stride_length_m + t * b.cycle.stride_length_m,
+                limb_phase_offsets,
+            },
+        }
+    }
+}
+
+/// State machine for speed-dependent gait selection and smooth transitions.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GaitController {
+    gaits: Vec<(f32, Gait)>,
+    current_speed: f32,
+    transition_progress: f32,
+    transition_duration: f32,
+    previous_gait_index: usize,
+    current_gait_index: usize,
+}
+
+impl GaitController {
+    /// Create from a list of `(max_speed, Gait)` pairs. Sorted internally by speed.
+    #[must_use]
+    pub fn new(mut gaits: Vec<(f32, Gait)>, transition_duration: f32) -> Self {
+        gaits.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        Self {
+            gaits,
+            current_speed: 0.0,
+            transition_progress: 1.0,
+            transition_duration,
+            previous_gait_index: 0,
+            current_gait_index: 0,
+        }
+    }
+
+    /// Default bipedal controller: idle(0) -> walk(2) -> run(10).
+    #[must_use]
+    pub fn bipedal_default() -> Self {
+        let idle = Gait {
+            name: "idle".into(),
+            gait_type: GaitType::Walk,
+            speed_range: (0.0, 0.5),
+            cycle: GaitCycle {
+                gait_type: GaitType::Walk,
+                cycle_duration_s: 1.0,
+                duty_factor: 1.0,
+                stride_length_m: 0.0,
+                limb_phase_offsets: vec![0.0, 0.5],
+            },
+        };
+        Self::new(
+            vec![
+                (0.5, idle),
+                (2.0, Gait::human_walk()),
+                (10.0, Gait::human_run()),
+            ],
+            0.3,
+        )
+    }
+
+    /// Default quadrupedal controller: walk(2) -> trot(5) -> canter(8) -> gallop(15).
+    #[must_use]
+    pub fn quadrupedal_default() -> Self {
+        Self::new(
+            vec![
+                (2.0, Gait::quadruped_walk()),
+                (5.0, Gait::quadruped_trot()),
+                (8.0, Gait::quadruped_canter()),
+                (15.0, Gait::quadruped_gallop()),
+            ],
+            0.3,
+        )
+    }
+
+    /// Set target speed. Triggers a transition if the gait bracket changes.
+    pub fn set_speed(&mut self, speed: f32) {
+        self.current_speed = speed;
+        let new_index = self.gait_index_for_speed(speed);
+        if new_index != self.current_gait_index {
+            self.previous_gait_index = self.current_gait_index;
+            self.current_gait_index = new_index;
+            self.transition_progress = 0.0;
+        }
+    }
+
+    /// Advance transition state by `dt` seconds.
+    pub fn update(&mut self, dt: f32) {
+        if self.transition_progress < 1.0 && self.transition_duration > 0.0 {
+            self.transition_progress =
+                (self.transition_progress + dt / self.transition_duration).min(1.0);
+        }
+    }
+
+    /// Get the current effective gait (blended during transitions).
+    #[must_use]
+    pub fn current_gait(&self) -> Gait {
+        if self.gaits.is_empty() {
+            return Gait::human_walk();
+        }
+        if self.transition_progress >= 1.0 || self.previous_gait_index == self.current_gait_index {
+            return self.gaits[self.current_gait_index].1.clone();
+        }
+        Gait::blend(
+            &self.gaits[self.previous_gait_index].1,
+            &self.gaits[self.current_gait_index].1,
+            self.transition_progress,
+        )
+    }
+
+    /// Whether a transition is in progress.
+    #[must_use]
+    pub fn is_transitioning(&self) -> bool {
+        self.transition_progress < 1.0 && self.previous_gait_index != self.current_gait_index
+    }
+
+    /// Current speed.
+    #[must_use]
+    pub fn speed(&self) -> f32 {
+        self.current_speed
+    }
+
+    /// Find which gait bracket a given speed falls into.
+    fn gait_index_for_speed(&self, speed: f32) -> usize {
+        for (i, (max_speed, _)) in self.gaits.iter().enumerate() {
+            if speed <= *max_speed {
+                return i;
+            }
+        }
+        self.gaits.len().saturating_sub(1)
+    }
+}
+
 /// Foot placement data for a single limb at a point in time.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FootPlacement {
@@ -401,6 +565,127 @@ mod tests {
                 );
             }
         }
+    }
+
+    // ── Blend tests ──
+
+    #[test]
+    fn blend_endpoints() {
+        let a = Gait::human_walk();
+        let b = Gait::human_run();
+        let at0 = Gait::blend(&a, &b, 0.0);
+        let at1 = Gait::blend(&a, &b, 1.0);
+        assert!((at0.cycle.cycle_duration_s - a.cycle.cycle_duration_s).abs() < 1e-6);
+        assert!((at0.cycle.duty_factor - a.cycle.duty_factor).abs() < 1e-6);
+        assert!((at0.cycle.stride_length_m - a.cycle.stride_length_m).abs() < 1e-6);
+        assert!((at1.cycle.cycle_duration_s - b.cycle.cycle_duration_s).abs() < 1e-6);
+        assert!((at1.cycle.duty_factor - b.cycle.duty_factor).abs() < 1e-6);
+        assert!((at1.cycle.stride_length_m - b.cycle.stride_length_m).abs() < 1e-6);
+    }
+
+    #[test]
+    fn blend_midpoint() {
+        let a = Gait::human_walk();
+        let b = Gait::human_run();
+        let mid = Gait::blend(&a, &b, 0.5);
+        let expected_dur = (a.cycle.cycle_duration_s + b.cycle.cycle_duration_s) / 2.0;
+        let expected_duty = (a.cycle.duty_factor + b.cycle.duty_factor) / 2.0;
+        let expected_stride = (a.cycle.stride_length_m + b.cycle.stride_length_m) / 2.0;
+        assert!((mid.cycle.cycle_duration_s - expected_dur).abs() < 1e-6);
+        assert!((mid.cycle.duty_factor - expected_duty).abs() < 1e-6);
+        assert!((mid.cycle.stride_length_m - expected_stride).abs() < 1e-6);
+    }
+
+    #[test]
+    fn blend_different_limb_counts() {
+        let biped = Gait::human_walk(); // 2 limbs
+        let quad = Gait::quadruped_trot(); // 4 limbs
+        let blended = Gait::blend(&biped, &quad, 0.5);
+        assert_eq!(blended.cycle.limb_phase_offsets.len(), 4);
+        // Third limb: biped padded with 0.0, quad has 0.5 → blended = 0.25
+        assert!((blended.cycle.limb_phase_offsets[2] - 0.25).abs() < 1e-6);
+    }
+
+    // ── GaitController tests ──
+
+    #[test]
+    fn controller_selects_walk_at_low_speed() {
+        let mut ctrl = GaitController::bipedal_default();
+        ctrl.set_speed(1.0);
+        ctrl.update(1.0); // complete any transition
+        let gait = ctrl.current_gait();
+        assert_eq!(gait.gait_type, GaitType::Walk);
+        assert_eq!(gait.name, "walk");
+    }
+
+    #[test]
+    fn controller_selects_run_at_high_speed() {
+        let mut ctrl = GaitController::bipedal_default();
+        ctrl.set_speed(5.0);
+        ctrl.update(1.0);
+        let gait = ctrl.current_gait();
+        assert_eq!(gait.gait_type, GaitType::Run);
+        assert_eq!(gait.name, "run");
+    }
+
+    #[test]
+    fn controller_transitions_smoothly() {
+        let mut ctrl = GaitController::bipedal_default();
+        ctrl.set_speed(1.0);
+        ctrl.update(1.0);
+        // Now change to run
+        ctrl.set_speed(5.0);
+        assert!(ctrl.is_transitioning());
+    }
+
+    #[test]
+    fn controller_update_completes_transition() {
+        let mut ctrl = GaitController::bipedal_default();
+        ctrl.set_speed(1.0);
+        ctrl.update(1.0);
+        ctrl.set_speed(5.0);
+        assert!(ctrl.is_transitioning());
+        ctrl.update(0.5); // transition_duration is 0.3, so 0.5 should complete it
+        assert!(!ctrl.is_transitioning());
+    }
+
+    #[test]
+    fn controller_current_gait_blended() {
+        let mut ctrl = GaitController::bipedal_default();
+        ctrl.set_speed(1.0);
+        ctrl.update(1.0);
+        let walk_dur = ctrl.current_gait().cycle.cycle_duration_s;
+        ctrl.set_speed(5.0);
+        ctrl.update(0.15); // half of 0.3s transition
+        let blended = ctrl.current_gait();
+        let run_dur = Gait::human_run().cycle.cycle_duration_s;
+        // Should be between walk and run durations
+        assert!(blended.cycle.cycle_duration_s < walk_dur);
+        assert!(blended.cycle.cycle_duration_s > run_dur);
+    }
+
+    #[test]
+    fn bipedal_default_preset() {
+        let ctrl = GaitController::bipedal_default();
+        // 3 gaits: idle(0.5), walk(2.0), run(10.0)
+        assert_eq!(ctrl.gaits.len(), 3);
+        assert!((ctrl.gaits[0].0 - 0.5).abs() < 1e-6);
+        assert!((ctrl.gaits[1].0 - 2.0).abs() < 1e-6);
+        assert!((ctrl.gaits[2].0 - 10.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn quadrupedal_default_preset() {
+        let ctrl = GaitController::quadrupedal_default();
+        assert_eq!(ctrl.gaits.len(), 4);
+        // Verify sorted ascending
+        for i in 1..ctrl.gaits.len() {
+            assert!(ctrl.gaits[i].0 > ctrl.gaits[i - 1].0);
+        }
+        assert!((ctrl.gaits[0].0 - 2.0).abs() < 1e-6);
+        assert!((ctrl.gaits[1].0 - 5.0).abs() < 1e-6);
+        assert!((ctrl.gaits[2].0 - 8.0).abs() < 1e-6);
+        assert!((ctrl.gaits[3].0 - 15.0).abs() < 1e-6);
     }
 
     #[test]

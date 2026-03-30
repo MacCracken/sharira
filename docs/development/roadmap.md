@@ -24,31 +24,16 @@ Sharira does NOT own:
 
 ---
 
-## Soorat Integration (`integration/soorat.rs`)
-
-> Feature-gated `soorat-compat` — structured visualization types for soorat rendering
-
-- [ ] **`integration/soorat.rs` module** — visualization data structures
-- [ ] **Skeleton visualization**: bone hierarchy, joint positions, joint limits for wireframe/debug rendering
-- [ ] **Muscle overlay**: muscle attachment points, current activation level for colored overlay rendering
-- [ ] **Gait cycle data**: foot contact phases, center-of-mass trajectory for animation timeline rendering
-- [ ] **Body plan mesh**: body segment dimensions and proportions for procedural mesh generation
-
----
-
-## Future
+## v2.0 — Future
 
 > Not scheduled — demand-gated
 
-- [ ] Respiratory system (breath cycle, gas exchange)
-- [ ] Circulatory system (heart rate, blood flow)
-- [ ] Fatigue model (muscle exhaustion, recovery)
-- [ ] Injury/damage model (fractures, sprains, healing)
-- [ ] Morphology variation (size, proportion scaling)
+- [ ] Respiratory system (breath cycle, gas exchange, VO2)
+- [ ] Circulatory system (heart rate, blood flow dynamics)
+- [ ] Injury/damage model (fractures, sprains, healing, damage accumulation)
 - [ ] Multi-body coordination (bimanual tasks, load carrying)
-- [ ] Inverse kinematics solver (FABRIK / analytic 2-bone)
-- [ ] Gait transition blending (state machine between gaits)
-- [ ] Body allometry (mass-based scaling via power laws)
+- [ ] Muscle wrapping (via-points for muscles that wrap around bones)
+- [ ] Proprioception (joint angle feedback, muscle spindle signals)
 
 ---
 
@@ -68,11 +53,17 @@ Sharira does NOT own:
 |---------|---------|-------|
 | Bone/joint/muscle definition | Yes | -- |
 | Forward kinematics | Yes | -- |
+| Inverse kinematics | Yes | -- |
 | Pose representation | Yes | -- |
 | Body state aggregation | Yes | -- |
+| Joint constraint enforcement | Yes | -- |
 | Biomechanics (CoM, ZMP, stability) | Yes | -- |
-| Gait cycles & foot placement | Yes | -- |
+| Gait cycles, blending, & foot placement | Yes | -- |
+| Muscle fatigue (3-compartment model) | Yes | -- |
+| Allometric scaling (power laws) | Yes | -- |
+| Morphology variation (parametric) | Yes | -- |
 | Cross-crate bridges | Yes | -- |
+| Soorat visualization data | Yes | -- |
 | Physics simulation (forces) | -- | impetus |
 | Creature behavior/AI | -- | jantu |
 | Material science (bone stress) | -- | dravya |
