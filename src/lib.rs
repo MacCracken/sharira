@@ -23,6 +23,8 @@ pub mod body;
 pub mod bridge;
 pub mod error;
 pub mod gait;
+/// Integration APIs for downstream consumers (soorat rendering).
+pub mod integration;
 pub mod joint;
 pub mod kinematics;
 pub mod muscle;

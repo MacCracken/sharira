@@ -22,54 +22,6 @@ Sharira does NOT own:
 - **Math primitives** -> hisab (vectors, matrices, transforms)
 - **Material stress** -> dravya (bone/tissue material science)
 
-## V0.1.0 — Foundation (done)
-
-### skeleton
-- [x] BoneId (u16 identifier)
-- [x] Bone struct (position, rotation, length, mass, parent hierarchy)
-- [x] Skeleton struct (bone collection with hierarchy navigation)
-- [x] find_bone, get_bone, total_mass, roots, children, chain_to_root
-
-### joint
-- [x] JointType enum (Ball, Hinge, Pivot, Saddle, Fixed, Planar)
-- [x] Degrees of freedom per joint type
-- [x] AxisLimit (min/max radians with clamping)
-- [x] JointLimits (x/y/z limits with factory methods)
-- [x] Joint struct (bone connection with stiffness, damping)
-- [x] Presets: human_knee, human_shoulder
-
-### muscle
-- [x] MuscleGroup enum (Flexor, Extensor, Abductor, Adductor, Rotator, Sphincter)
-- [x] Muscle struct (origin/insertion bones, Hill muscle model)
-- [x] Force calculation with activation level
-- [x] Antagonist detection
-
-### gait
-- [x] GaitPhase enum (Stance, Swing, DoubleSupport, Flight)
-- [x] GaitType enum (Walk, Trot, Canter, Gallop, Crawl, Slither, Hop, Fly, Swim)
-- [x] GaitCycle (duration, duty factor, stride length, limb phase offsets)
-- [x] Gait presets: human_walk, human_run, quadruped_walk, quadruped_trot
-- [x] Limb phase calculation, speed computation
-
-### biomechanics
-- [x] Center of mass (weighted position average)
-- [x] Ground reaction force (stance mechanics)
-- [x] Cost of transport (energy efficiency)
-- [x] Balance margin (stability computation)
-
-### preset
-- [x] BodyPlan enum (Bipedal, Quadruped, Hexapod, Octopod, Serpentine, Avian, Aquatic, Centipede)
-- [x] Limb count, flight/swim capability, typical joint count
-
----
-
-## Cross-Crate Bridges
-
-- [ ] **`bridge.rs` module** — primitive-value conversions for cross-crate physiology
-- [ ] **impetus bridge**: joint angles (rad), angular velocities (rad/s) -> constraint forces; body segment mass (kg) -> inertia properties
-- [ ] **dravya bridge**: bone density (kg/m3) -> material stiffness; muscle force (N) -> tendon stress (Pa)
-- [ ] **ushma bridge**: metabolic rate (W) -> body heat generation; skin surface area (m2) -> radiation heat loss
-
 ---
 
 ## Soorat Integration (`integration/soorat.rs`)
@@ -94,6 +46,9 @@ Sharira does NOT own:
 - [ ] Injury/damage model (fractures, sprains, healing)
 - [ ] Morphology variation (size, proportion scaling)
 - [ ] Multi-body coordination (bimanual tasks, load carrying)
+- [ ] Inverse kinematics solver (FABRIK / analytic 2-bone)
+- [ ] Gait transition blending (state machine between gaits)
+- [ ] Body allometry (mass-based scaling via power laws)
 
 ---
 
@@ -112,6 +67,12 @@ Sharira does NOT own:
 | Feature | sharira | other |
 |---------|---------|-------|
 | Bone/joint/muscle definition | Yes | -- |
+| Forward kinematics | Yes | -- |
+| Pose representation | Yes | -- |
+| Body state aggregation | Yes | -- |
+| Biomechanics (CoM, ZMP, stability) | Yes | -- |
+| Gait cycles & foot placement | Yes | -- |
+| Cross-crate bridges | Yes | -- |
 | Physics simulation (forces) | -- | impetus |
 | Creature behavior/AI | -- | jantu |
 | Material science (bone stress) | -- | dravya |

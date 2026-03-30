@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0]
+
+### Added
+- **integration/soorat** — feature-gated `soorat-compat` module with visualization data structures: `SkeletonVisualization` (bone segments + joints from FK transforms), `MuscleOverlay` (attachment points + activation from muscles), `GaitCycleVisualization` (timeline with limb phase tracks from `Gait`), `BodyPlanVisualization` (limb count, capabilities from `BodyPlan`)
+
+### Updated
+- hisab 1.1.0 -> 1.3.0, zerocopy 0.8.47 -> 0.8.48
+
 ## [0.2.0]
 
 ### Added
