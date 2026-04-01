@@ -39,6 +39,9 @@ pub mod skeleton;
 #[cfg(feature = "logging")]
 pub mod logging;
 
+#[cfg(feature = "bioenergetics")]
+pub mod bioenergetics;
+
 pub use allometry::{AllometricParams, allometric_skeleton, scale_skeleton};
 pub use body::Body;
 pub use error::{Result, ShariraError};
