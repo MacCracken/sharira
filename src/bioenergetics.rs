@@ -7,10 +7,10 @@
 //!
 //! # Coupling Points
 //!
-//! - **Mechanical power → ATP demand**: [`atp_demand`] converts muscle watts to metabolic cost
-//! - **Energy state → Fatigue rate**: [`modulate_fatigue`] scales fatigue/recovery rates
+//! - **Mechanical power → ATP demand**: [`MetabolicCoupling::atp_demand`] converts muscle watts to metabolic cost
+//! - **Energy state → Fatigue rate**: [`MetabolicCoupling::tick`] scales fatigue/recovery rates
 //!   based on phosphocreatine and glycogen reserves
-//! - **Activity → MET**: [`met_from_activity`] converts muscle power + body mass to MET
+//! - **Activity → MET**: [`MetabolicCoupling::met_from_activity`] converts muscle power + body mass to MET
 
 use rasayan::energy;
 use serde::{Deserialize, Serialize};
